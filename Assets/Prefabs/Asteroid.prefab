@@ -169,4 +169,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c9d99805bc04748a76f890b03f6917, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Asteroid
-  speed: 2.5
+  minSpeed: 2
+  maxSpeed: 4.5
+  shieldDropPrefab: {fileID: 664366091502783974, guid: 7977dd861ee3ca94494246e5a6589566, type: 3}
+  dropChance: 0.3

@@ -43,6 +43,12 @@ public class PlayerController : MonoBehaviour
             laserRb.gravityScale = 0;
             laserRb.linearVelocity = Vector2.up * laserSpeed;
             Destroy(laser, 2.5f); // Tự hủy viên đạn sau 2.5 giây
+
+            // Phát âm thanh tiếng súng Laser
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlayLaser();
+            }
         }
     }
 }
