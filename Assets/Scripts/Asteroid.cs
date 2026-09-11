@@ -7,6 +7,9 @@ public class Asteroid : MonoBehaviour
     public float maxSpeed = 4.5f;
     private Rigidbody2D rb;
 
+    [Header("Visual Effects (VFX)")]
+    public GameObject explosionPrefab; // Kéo Prefab vụ nổ vào đây
+
     [Header("Shield Drop Settings")]
     public GameObject shieldDropPrefab;
     [Range(0f, 1f)]
@@ -41,17 +44,28 @@ public class Asteroid : MonoBehaviour
                 AudioManager.Instance.PlayExplosion();
             }
 
-            // 2. Lưu chính xác vị trí vụ nổ trong không gian (World Position)
+            // 2. Rung nhẹ màn hình tạo cảm giác lực nổ (rung trong 0.12s, biên độ 0.15)
+            if (CameraShake.Instance != null)
+            {
+                CameraShake.Instance.Shake(0.12f, 0.15f);
+            }
+
+            // 3. Lưu vị trí nổ
             Vector3 dropPosition = transform.position;
 
-            // 3. Kiểm tra tỉ lệ rơi khiên
+            // 4. Kích hoạt hiệu ứng hoạt ảnh nổ
+            if (explosionPrefab != null)
+            {
+                Instantiate(explosionPrefab, dropPosition, Quaternion.identity);
+            }
+
+            // 5. Kiểm tra tỉ lệ rơi khiên
             if (shieldDropPrefab != null && Random.value <= dropChance)
             {
-                // Sinh khiên ngay tại đúng tâm vị trí thiên thạch vừa bị nổ
                 Instantiate(shieldDropPrefab, dropPosition, Quaternion.identity);
             }
 
-            // 4. Hủy viên đạn Laser và thiên thạch
+            // 6. Hủy viên đạn Laser và thiên thạch
             Destroy(other.gameObject);
             Destroy(gameObject);
         }

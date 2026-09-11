@@ -741,6 +741,7 @@ GameObject:
   - component: {fileID: 1212633904}
   - component: {fileID: 1212633903}
   - component: {fileID: 1212633906}
+  - component: {fileID: 1212633907}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -866,6 +867,18 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &1212633907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1212633902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7eb9c94b001bfe7408544b4a99957f9e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraShake
 --- !u!1 &1248759078
 GameObject:
   m_ObjectHideFlags: 0
@@ -1152,10 +1165,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   laserSound: {fileID: 8300000, guid: ed98f5d8dae691a449099432a78c0ac5, type: 3}
+  laserVolume: 0.7
+  laserTrimDelay: 0.76
   explosionSound: {fileID: 8300000, guid: 4c0404bcb1a79a746ba8aa57cd6deef1, type: 3}
+  explosionVolume: 1
   starSound: {fileID: 8300000, guid: a6a4bb85399610b4cb942675843a5130, type: 3}
+  starVolume: 1
   shieldPickupSound: {fileID: 8300000, guid: 982363d79647e964fbbeb463b79557bb, type: 3}
+  shieldPickupVolume: 0.8
   shieldBreakSound: {fileID: 8300000, guid: 8c609a97b97c1774fa7360c00794bbf8, type: 3}
+  shieldBreakVolume: 1
 --- !u!4 &1870485475
 Transform:
   m_ObjectHideFlags: 0

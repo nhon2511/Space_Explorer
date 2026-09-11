@@ -63,6 +63,12 @@ public class PlayerCollision : MonoBehaviour
                     AudioManager.Instance.PlayExplosion();
                 }
 
+                // Rung màn hình vừa phải khi khiên vỡ đỡ đòn
+                if (CameraShake.Instance != null)
+                {
+                    CameraShake.Instance.Shake(0.2f, 0.25f);
+                }
+
                 Destroy(other.gameObject);
             }
             else
@@ -72,6 +78,12 @@ public class PlayerCollision : MonoBehaviour
                 if (AudioManager.Instance != null)
                 {
                     AudioManager.Instance.PlayExplosion();
+                }
+
+                // Rung màn hình thật mạnh khi tàu bị tiêu diệt
+                if (CameraShake.Instance != null)
+                {
+                    CameraShake.Instance.Shake(0.35f, 0.45f);
                 }
 
                 // Trừ 5 điểm và chuyển màn hình GameOver
