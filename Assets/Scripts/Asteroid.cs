@@ -6,6 +6,7 @@ public class Asteroid : MonoBehaviour
     public float minSpeed = 2f;
     public float maxSpeed = 4.5f;
     private Rigidbody2D rb;
+    private float speedMultiplier = 1f; // Hệ số nhân tốc độ từ Spawner
 
     [Header("Visual Effects (VFX)")]
     public GameObject explosionPrefab; // Kéo Prefab vụ nổ vào đây
@@ -18,9 +19,29 @@ public class Asteroid : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        ApplyMovement();
 
-        // Tốc độ ngẫu nhiên
-        float speed = Random.Range(minSpeed, maxSpeed);
+        // Tự hủy sau 8 giây khi trôi khỏi màn hình
+        Destroy(gameObject, 8f);
+    }
+
+    // Hàm nhận hệ số tăng tốc từ Spawner
+    public void SetSpeedMultiplier(float multiplier)
+    {
+        speedMultiplier = multiplier;
+
+        // Cập nhật ngay vận tốc nếu Rigidbody2D đã sẵn sàng
+        if (rb != null)
+        {
+            ApplyMovement();
+        }
+    }
+
+    // Áp dụng hướng di chuyển và vận tốc thực tế
+    private void ApplyMovement()
+    {
+        // Tốc độ ngẫu nhiên nhân với hệ số độ khó tăng dần
+        float speed = Random.Range(minSpeed, maxSpeed) * speedMultiplier;
 
         // Rơi từ trên xuống dưới (hơi lệch góc nhẹ ngẫu nhiên)
         Vector2 moveDirection = new Vector2(Random.Range(-0.25f, 0.25f), -1f).normalized;
@@ -28,9 +49,6 @@ public class Asteroid : MonoBehaviour
 
         // Xoay nhẹ viên đá
         rb.angularVelocity = Random.Range(-50f, 50f);
-
-        // Tự hủy sau 8 giây khi trôi khỏi màn hình
-        Destroy(gameObject, 8f);
     }
 
     void OnTriggerEnter2D(Collider2D other)
