@@ -2,10 +2,16 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Movement Settings")]
     public float moveSpeed = 6f;
+
+    [Header("Weapon Settings")]
     public GameObject laserPrefab;
     public Transform firePoint;
     public float laserSpeed = 12f;
+
+    [Header("VFX Settings")]
+    public Animator thrusterAnimator; // Kéo đối tượng con ThrusterVisual vào đây
 
     private Rigidbody2D rb;
     private Vector2 moveInput;
@@ -17,11 +23,18 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // Di chuyển bằng 4 phím mũi tên hoặc A-D-W-S
+        // 1. Nhận phím di chuyển (mũi tên hoặc WASD)
         moveInput.x = Input.GetAxisRaw("Horizontal");
         moveInput.y = Input.GetAxisRaw("Vertical");
 
-        // Nhấn phím Space để bắn tia laser
+        // 2. Cập nhật hoạt ảnh lửa đuôi tàu
+        if (thrusterAnimator != null)
+        {
+            bool isMoving = moveInput.sqrMagnitude > 0.01f;
+            thrusterAnimator.SetBool("isMoving", isMoving);
+        }
+
+        // 3. Nhấn phím Space để bắn tia laser
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Shoot();

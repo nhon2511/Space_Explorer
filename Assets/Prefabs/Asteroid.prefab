@@ -169,6 +169,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91c9d99805bc04748a76f890b03f6917, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Asteroid
+  canSplit: 1
+  smallerAsteroidPrefab: {fileID: 6474917794067639746, guid: 2ca88d200165695429bed52f6b92e3ad, type: 3}
+  scoreValue: 20
   minSpeed: 2
   maxSpeed: 4.5
   explosionPrefab: {fileID: 3058133868970670697, guid: 5faf8efbfce106548a75fe2a0f532a17, type: 3}

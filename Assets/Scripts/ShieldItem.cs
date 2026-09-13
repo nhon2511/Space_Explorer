@@ -27,9 +27,9 @@ public class ShieldItem : MonoBehaviour
 
     void Update()
     {
-        // Dự phòng nếu không dùng Rigidbody2D hoặc Rigidbody2D bị tắt, 
-        // nó vẫn sẽ bị ép rơi xuống đều đặn qua Transform
-        if (rb == null || rb.isKinematic)
+        // Dự phòng nếu không dùng Rigidbody2D hoặc Rigidbody2D ở dạng Kinematic, 
+        // nó vẫn sẽ trôi xuống đều đặn qua Transform
+        if (rb == null || rb.bodyType == RigidbodyType2D.Kinematic)
         {
             transform.Translate(Vector3.down * fallSpeed * Time.deltaTime, Space.World);
         }
