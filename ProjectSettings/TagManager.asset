@@ -8,6 +8,9 @@ TagManager:
   - Asteroid
   - Star
   - Shield
+  - Health
+  - Magnet
+  - WeaponUpgrade
   layers:
   - Default
   - TransparentFX

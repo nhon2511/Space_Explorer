@@ -175,5 +175,10 @@ MonoBehaviour:
   minSpeed: 2
   maxSpeed: 4.5
   explosionPrefab: {fileID: 3058133868970670697, guid: 5faf8efbfce106548a75fe2a0f532a17, type: 3}
+  dropPrefabs:
+  - {fileID: 664366091502783974, guid: 7977dd861ee3ca94494246e5a6589566, type: 3}
+  - {fileID: 664366091502783974, guid: 2d3d59ed3f1d1ae468463151984c526e, type: 3}
+  - {fileID: 664366091502783974, guid: 21e73131a31f646408671d7d029e0a4b, type: 3}
+  - {fileID: 664366091502783974, guid: 20532ba05770b754b944b919af3f54af, type: 3}
   shieldDropPrefab: {fileID: 664366091502783974, guid: 7977dd861ee3ca94494246e5a6589566, type: 3}
   dropChance: 0.2

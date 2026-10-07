@@ -11,16 +11,19 @@ public class Asteroid : MonoBehaviour
     public float minSpeed = 2f;
     public float maxSpeed = 4.5f;
     private Rigidbody2D rb;
-    private float speedMultiplier = 1f; // Hệ số nhân tốc độ từ Spawner
-    private bool isLaunched = false;     // Đánh dấu nếu là mảnh vỡ vừa được bắn ra
+    private float speedMultiplier = 1f;
+    private bool isLaunched = false;
 
     [Header("Visual Effects (VFX)")]
-    public GameObject explosionPrefab; // Kéo Prefab vụ nổ vào đây
+    public GameObject explosionPrefab;
 
-    [Header("Shield Drop Settings")]
+    [Header("Drop Settings")]
+    [Tooltip("Danh sách các vật phẩm có thể rơi (Khiên, Nâng cấp đạn, Hồi máu, Nam châm)")]
+    public GameObject[] dropPrefabs;
+    [Tooltip("Fallback nếu không dùng mảng dropPrefabs")]
     public GameObject shieldDropPrefab;
     [Range(0f, 1f)]
-    public float dropChance = 0.35f; // Tỉ lệ rơi khiên (35%)
+    public float dropChance = 0.35f; // Tỉ lệ rơi vật phẩm (35%)
 
     void Awake()
     {
@@ -29,7 +32,6 @@ public class Asteroid : MonoBehaviour
 
     void Start()
     {
-        // Chỉ áp dụng chuyển động rơi tự nhiên nếu không phải là mảnh vỡ vừa văng ra
         if (!isLaunched)
         {
             ApplyMovement();
@@ -39,7 +41,6 @@ public class Asteroid : MonoBehaviour
         Destroy(gameObject, 8f);
     }
 
-    // Hàm nhận hệ số tăng tốc từ Spawner
     public void SetSpeedMultiplier(float multiplier)
     {
         speedMultiplier = multiplier;
@@ -50,7 +51,6 @@ public class Asteroid : MonoBehaviour
         }
     }
 
-    // Áp dụng hướng di chuyển rơi thông thường
     private void ApplyMovement()
     {
         float speed = Random.Range(minSpeed, maxSpeed) * speedMultiplier;
@@ -59,12 +59,11 @@ public class Asteroid : MonoBehaviour
         rb.angularVelocity = Random.Range(-50f, 50f);
     }
 
-    // Hàm phóng mảnh vỡ văng chéo theo hướng và tốc độ chỉ định
     public void LaunchSplit(Vector2 direction, float speed)
     {
         isLaunched = true;
         if (rb == null) rb = GetComponent<Rigidbody2D>();
-        
+
         rb.linearVelocity = direction.normalized * speed;
         rb.angularVelocity = Random.Range(-120f, 120f);
     }
@@ -80,13 +79,13 @@ public class Asteroid : MonoBehaviour
                 GameManager.Instance.AddScore(scoreValue);
             }
 
-            // 2. Phát âm thanh nổ thiên thạch
+            // 2. Âm thanh nổ
             if (AudioManager.Instance != null)
             {
                 AudioManager.Instance.PlayExplosion();
             }
 
-            // 3. Rung nhẹ màn hình
+            // 3. Rung màn hình
             if (CameraShake.Instance != null)
             {
                 CameraShake.Instance.Shake(0.12f, 0.15f);
@@ -94,16 +93,16 @@ public class Asteroid : MonoBehaviour
 
             Vector3 currentPos = transform.position;
 
-            // 4. Kích hoạt hiệu ứng hoạt ảnh nổ
+            // 4. Sinh hiệu ứng vụ nổ
             if (explosionPrefab != null)
             {
                 Instantiate(explosionPrefab, currentPos, Quaternion.identity);
             }
 
-            // 5. Cơ chế tách mảnh: Nếu là thiên thạch to -> vỡ thành 2 mảnh con
+            // 5. Tách đôi nếu là thiên thạch to
             if (canSplit && smallerAsteroidPrefab != null)
             {
-                // Mảnh 1 văng chéo sang trái
+                // Mảnh 1 sang trái
                 GameObject piece1 = Instantiate(smallerAsteroidPrefab, currentPos + new Vector3(-0.25f, 0f, 0f), Quaternion.identity);
                 Asteroid ast1 = piece1.GetComponent<Asteroid>();
                 if (ast1 != null)
@@ -111,7 +110,7 @@ public class Asteroid : MonoBehaviour
                     ast1.LaunchSplit(new Vector2(-0.75f, -0.65f), Random.Range(4f, 5.5f));
                 }
 
-                // Mảnh 2 văng chéo sang phải
+                // Mảnh 2 sang phải
                 GameObject piece2 = Instantiate(smallerAsteroidPrefab, currentPos + new Vector3(0.25f, 0f, 0f), Quaternion.identity);
                 Asteroid ast2 = piece2.GetComponent<Asteroid>();
                 if (ast2 != null)
@@ -121,16 +120,35 @@ public class Asteroid : MonoBehaviour
             }
             else
             {
-                // Khi mảnh nhỏ nổ tung mới xét rơi khiên
-                if (shieldDropPrefab != null && Random.value <= dropChance)
-                {
-                    Instantiate(shieldDropPrefab, currentPos, Quaternion.identity);
-                }
+                // Thiên thạch nhỏ nổ -> Xét rơi vật phẩm
+                SpawnRandomDrop(currentPos);
             }
 
-            // 6. Hủy viên đạn Laser và thiên thạch hiện tại
+            // 6. Hủy đạn và thiên thạch
             Destroy(other.gameObject);
             Destroy(gameObject);
+        }
+    }
+
+    void SpawnRandomDrop(Vector3 spawnPosition)
+    {
+        if (Random.value > dropChance) return;
+
+        // Nếu có danh sách nhiều vật phẩm
+        if (dropPrefabs != null && dropPrefabs.Length > 0)
+        {
+            int randomIndex = Random.Range(0, dropPrefabs.Length);
+            if (dropPrefabs[randomIndex] != null)
+            {
+                Instantiate(dropPrefabs[randomIndex], spawnPosition, Quaternion.identity);
+                return;
+            }
+        }
+
+        // Fallback: nếu chưa gán mảng dropPrefabs thì rơi khiên như cũ
+        if (shieldDropPrefab != null)
+        {
+            Instantiate(shieldDropPrefab, spawnPosition, Quaternion.identity);
         }
     }
 }

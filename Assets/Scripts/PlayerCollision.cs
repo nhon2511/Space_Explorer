@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class PlayerCollision : MonoBehaviour
@@ -6,9 +7,17 @@ public class PlayerCollision : MonoBehaviour
     public GameObject shieldVisual; // Đối tượng vòng khiên quanh tàu (ShieldVisual)
     private bool hasShield = false;
 
+    [Header("Invulnerability Settings (Chớp nháy bất tử)")]
+    public float invulnerableDuration = 1.5f; // Thời gian bất tử sau khi trúng đòn
+    public float flashInterval = 0.15f;       // Tốc độ chớp nháy
+    private bool isInvulnerable = false;
+    private SpriteRenderer spriteRenderer;
+
     void Start()
     {
-        // Mặc định lúc mới vào game chưa có khiên
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
+        // Mặc định ban đầu chưa có khiên
         hasShield = false;
         if (shieldVisual != null)
         {
@@ -18,79 +27,101 @@ public class PlayerCollision : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // TRƯỜNG HỢP 1: Nhặt được Item Khiên rơi
+        // 1. NHẶT VẬT PHẨM KHIÊN
         if (other.CompareTag("Shield"))
         {
             ActivateShield();
 
-            // Phát âm thanh nhặt khiên
             if (AudioManager.Instance != null)
-            {
                 AudioManager.Instance.PlayShieldPickup();
-            }
-
-            Destroy(other.gameObject); // Xóa item trên màn hình
-        }
-        // TRƯỜNG HỢP 2: Nhặt được Ngôi sao (Star)
-        else if (other.CompareTag("Star"))
-        {
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.AddScore(10);
-            }
-
-            // Phát âm thanh ăn sao
-            if (AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayStar();
-            }
 
             Destroy(other.gameObject);
         }
-        // TRƯỜNG HỢP 3: Va chạm với Thiên thạch (Asteroid)
+        // 2. NHẶT NGÔI SAO
+        else if (other.CompareTag("Star"))
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.AddScore(10);
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayStar();
+
+            Destroy(other.gameObject);
+        }
+        // 3. NHẶT ITEM NÂNG CẤP VŨ KHÍ
+        else if (other.CompareTag("WeaponUpgrade"))
+        {
+            PlayerController pc = GetComponent<PlayerController>();
+            if (pc != null) pc.UpgradeWeapon();
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayShieldPickup(); // Tái sử dụng âm thanh nhặt đồ
+
+            Destroy(other.gameObject);
+        }
+        // 4. NHẶT ITEM HỒI MÁU / MẠNG
+        else if (other.CompareTag("Health"))
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.Heal(1);
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayShieldPickup();
+
+            Destroy(other.gameObject);
+        }
+        // 5. NHẶT ITEM NAM CHÂM HÚT SAO
+        else if (other.CompareTag("Magnet"))
+        {
+            PlayerController pc = GetComponent<PlayerController>();
+            if (pc != null) pc.ActivateMagnet(7f);
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayShieldPickup();
+
+            Destroy(other.gameObject);
+        }
+        // 6. VA CHẠM THIÊN THẠCH
         else if (other.CompareTag("Asteroid"))
         {
             if (hasShield)
             {
-                // ĐANG CÓ KHIÊN:
-                // Khiên chịu đòn -> Vỡ khiên, nổ thiên thạch, tàu KHÔNG bị trừ điểm và KHÔNG chết
+                // CÓ KHIÊN: Vỡ khiên đỡ đòn, tàu không mất mạng
                 BreakShield();
 
-                // Phát âm thanh vỡ khiên kèm tiếng nổ
                 if (AudioManager.Instance != null)
                 {
                     AudioManager.Instance.PlayShieldBreak();
                     AudioManager.Instance.PlayExplosion();
                 }
 
-                // Rung màn hình vừa phải khi khiên vỡ đỡ đòn
                 if (CameraShake.Instance != null)
-                {
                     CameraShake.Instance.Shake(0.2f, 0.25f);
-                }
 
                 Destroy(other.gameObject);
             }
             else
             {
-                // KHÔNG CÓ KHIÊN:
-                // Phát âm thanh nổ khi tàu bị va chạm
+                // KHÔNG CÓ KHIÊN: Kiểm tra xem có đang trong thời gian bất tử (I-Frames) không
+                if (isInvulnerable) return;
+
                 if (AudioManager.Instance != null)
-                {
                     AudioManager.Instance.PlayExplosion();
-                }
 
-                // Rung màn hình thật mạnh khi tàu bị tiêu diệt
                 if (CameraShake.Instance != null)
-                {
-                    CameraShake.Instance.Shake(0.35f, 0.45f);
-                }
+                    CameraShake.Instance.Shake(0.3f, 0.4f);
 
-                // Trừ 5 điểm và chuyển màn hình GameOver
+                // Trừ điểm và trừ 1 mạng
                 if (GameManager.Instance != null)
                 {
                     GameManager.Instance.DeductScore(5);
-                    GameManager.Instance.GameOver();
+                    bool isDead = GameManager.Instance.TakeDamage(1);
+
+                    // Nếu chưa hết mạng -> Bật trạng thái chớp nháy bất tử
+                    if (!isDead)
+                    {
+                        StartCoroutine(InvulnerabilityRoutine());
+                    }
                 }
 
                 Destroy(other.gameObject);
@@ -98,23 +129,49 @@ public class PlayerCollision : MonoBehaviour
         }
     }
 
-    // Bật trạng thái khiên
-    void ActivateShield()
+    // Bật khiên
+    public void ActivateShield()
     {
         hasShield = true;
         if (shieldVisual != null)
-        {
             shieldVisual.SetActive(true);
-        }
     }
 
-    // Phá vỡ khiên
-    void BreakShield()
+    // Vỡ khiên
+    public void BreakShield()
     {
         hasShield = false;
         if (shieldVisual != null)
-        {
             shieldVisual.SetActive(false);
+    }
+
+    // Hiệu ứng chớp nháy trong suốt khi bất tử
+    IEnumerator InvulnerabilityRoutine()
+    {
+        isInvulnerable = true;
+        float elapsed = 0f;
+
+        while (elapsed < invulnerableDuration)
+        {
+            if (spriteRenderer != null)
+            {
+                Color c = spriteRenderer.color;
+                c.a = (c.a == 1f) ? 0.3f : 1f; // Nhấp nháy mờ/rõ
+                spriteRenderer.color = c;
+            }
+
+            yield return new WaitForSeconds(flashInterval);
+            elapsed += flashInterval;
         }
+
+        // Trả màu sắc về bình thường
+        if (spriteRenderer != null)
+        {
+            Color normalColor = spriteRenderer.color;
+            normalColor.a = 1f;
+            spriteRenderer.color = normalColor;
+        }
+
+        isInvulnerable = false;
     }
 }
