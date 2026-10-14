@@ -10,12 +10,12 @@ public class PlayerController : MonoBehaviour
     [Tooltip("Tự động đo kích thước màn hình theo Camera chính")]
     public bool autoDetectBounds = true;
     [Tooltip("Khoảng cách đệm an toàn tính từ mép màn hình vào trong")]
-    public float screenPadding = 0.6f;
+    public float screenPadding = 0.3f;
     // Tọa độ giới hạn thủ công (nếu tắt autoDetectBounds)
     public float minX = -8.2f;
     public float maxX = 8.2f;
-    public float minY = -4.5f;
-    public float maxY = 3.5f;
+    public float minY = -5.5f;
+    public float maxY = 5.5f;
 
     [Header("Weapon Settings")]
     public GameObject laserPrefab;
@@ -30,21 +30,32 @@ public class PlayerController : MonoBehaviour
     [Header("VFX Settings")]
     public Animator thrusterAnimator; // Kéo đối tượng con ThrusterVisual vào đây
 
+    public static PlayerController Instance;
+
     private Rigidbody2D rb;
     private Vector2 moveInput;
     private float nextFireTime = 0f;
-    private Vector2 calculatedBounds;
+    private Vector2 minBounds;
+    private Vector2 maxBounds;
+
+    void Awake()
+    {
+        Instance = this;
+    }
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
 
-        // Tự động tính toán biên màn hình theo Camera
+        // Tự động tính toán chuẩn xác cả 4 mép màn hình theo Camera thực tế (kể cả khi Camera bị lệch tâm Y)
         if (autoDetectBounds && Camera.main != null)
         {
             Camera cam = Camera.main;
-            Vector3 upperRight = cam.ViewportToWorldPoint(new Vector3(1, 1, cam.nearClipPlane));
-            calculatedBounds = new Vector2(upperRight.x - screenPadding, upperRight.y - screenPadding);
+            Vector3 lowerLeft = cam.ViewportToWorldPoint(new Vector3(0, 0, 10f));
+            Vector3 upperRight = cam.ViewportToWorldPoint(new Vector3(1, 1, 10f));
+
+            minBounds = new Vector2(lowerLeft.x + screenPadding, lowerLeft.y + screenPadding);
+            maxBounds = new Vector2(upperRight.x - screenPadding, upperRight.y - screenPadding);
         }
     }
 
@@ -88,9 +99,8 @@ public class PlayerController : MonoBehaviour
 
         if (autoDetectBounds)
         {
-            currentPos.x = Mathf.Clamp(currentPos.x, -calculatedBounds.x, calculatedBounds.x);
-            // Giới hạn trục Y không vượt quá 70% chiều cao màn hình để tránh chỗ thiên thạch spawn
-            currentPos.y = Mathf.Clamp(currentPos.y, -calculatedBounds.y, calculatedBounds.y * 0.7f);
+            currentPos.x = Mathf.Clamp(currentPos.x, minBounds.x, maxBounds.x);
+            currentPos.y = Mathf.Clamp(currentPos.y, minBounds.y, maxBounds.y);
         }
         else
         {

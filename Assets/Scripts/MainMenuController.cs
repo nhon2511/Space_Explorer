@@ -5,6 +5,7 @@ public class MainMenuController : MonoBehaviour
 {
     [Header("UI Reference")]
     public GameObject instructionsPanel;
+    public GameObject settingsPanel;
 
     // Chuyển sang scene GamePlay
     public void PlayGame()
@@ -27,6 +28,24 @@ public class MainMenuController : MonoBehaviour
         if (instructionsPanel != null)
         {
             instructionsPanel.SetActive(false);
+        }
+    }
+
+    // Mở bảng cài đặt
+    public void OpenSettings()
+    {
+        if (settingsPanel != null)
+        {
+            settingsPanel.SetActive(true);
+        }
+    }
+
+    // Đóng bảng cài đặt
+    public void CloseSettings()
+    {
+        if (settingsPanel != null)
+        {
+            settingsPanel.SetActive(false);
         }
     }
 }

@@ -11,12 +11,22 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI scoreText;
     private int score = 0;
 
+    [Header("Combo & Multiplier Settings")]
+    public TextMeshProUGUI comboText;
+    public float comboDuration = 2.5f; // Thời gian giữ Combo
+    private int comboCount = 0;
+    private float comboMultiplier = 1.0f;
+    private float comboTimer = 0f;
+
     [Header("Lives Settings")]
     public int maxLives = 3;
     private int currentLives;
 
     [Header("Lives UI (Hình Trái Tim)")]
     public Image[] heartImages; // Mảng 3 hình trái tim
+
+    [Header("Floating Text VFX")]
+    public GameObject floatingTextPrefab;
 
     [Header("Pause Menu Settings")]
     [Tooltip("Kéo PausePanel từ Canvas vào đây")]
@@ -26,6 +36,12 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         if (Instance == null) Instance = this;
+
+        // Tự động nạp FloatingText nếu chưa kéo thả trên Inspector
+        if (floatingTextPrefab == null)
+        {
+            floatingTextPrefab = Resources.Load<GameObject>("FloatingText");
+        }
     }
 
     void Start()
@@ -36,6 +52,7 @@ public class GameManager : MonoBehaviour
         currentLives = maxLives;
         UpdateScoreUI();
         UpdateLivesUI();
+        UpdateComboUI();
 
         // Mặc định ẩn bảng Pause khi vừa vào game
         if (pauseMenuPanel != null)
@@ -46,7 +63,17 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // Nhấn phím Escape hoặc phím P để Bật/Tắt Pause
+        // 1. Đếm ngược Combo
+        if (comboCount > 0)
+        {
+            comboTimer -= Time.deltaTime;
+            if (comboTimer <= 0f)
+            {
+                ResetCombo();
+            }
+        }
+
+        // 2. Nhấn phím Escape hoặc phím P để Bật/Tắt Pause
         if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
         {
             if (isPaused)
@@ -102,23 +129,91 @@ public class GameManager : MonoBehaviour
         return isPaused;
     }
 
-    // --- CỘNG / TRỪ ĐIỂM SỐ ---
-    public void AddScore(int amount)
+    public int GetCurrentLives() => currentLives;
+    public int GetMaxLives() => maxLives;
+
+    // --- CỘNG / TRỪ ĐIỂM SỐ & COMBO ---
+    public void AddScore(int amount, Vector3? worldPosition = null)
     {
-        score += amount;
+        // 1. Tăng Combo khi ăn điểm liên tiếp
+        comboCount++;
+        comboTimer = comboDuration;
+
+        // Tính toán Multiplier theo bậc combo
+        if (comboCount >= 10) comboMultiplier = 3.0f;
+        else if (comboCount >= 6) comboMultiplier = 2.0f;
+        else if (comboCount >= 3) comboMultiplier = 1.5f;
+        else comboMultiplier = 1.0f;
+
+        int finalPoints = Mathf.RoundToInt(amount * comboMultiplier);
+        score += finalPoints;
+
         UpdateScoreUI();
+        UpdateComboUI();
+
+        // 2. Tạo hiệu ứng chữ điểm nổi (Floating Text)
+        if (worldPosition.HasValue)
+        {
+            string displayText = comboMultiplier > 1f ? $"+{finalPoints} (x{comboMultiplier})" : $"+{finalPoints}";
+            Color textColor = (comboMultiplier > 1f) ? Color.yellow : Color.green;
+            SpawnFloatingText(displayText, worldPosition.Value, textColor);
+        }
     }
 
-    public void DeductScore(int amount)
+    public void DeductScore(int amount, Vector3? worldPosition = null)
     {
         score = Mathf.Max(0, score - amount);
         UpdateScoreUI();
+
+        // Va chạm bị mất đòn sẽ gãy chuỗi Combo
+        ResetCombo();
+
+        if (worldPosition.HasValue)
+        {
+            SpawnFloatingText($"-{amount}", worldPosition.Value, Color.red);
+        }
+    }
+
+    private void ResetCombo()
+    {
+        comboCount = 0;
+        comboMultiplier = 1.0f;
+        comboTimer = 0f;
+        UpdateComboUI();
     }
 
     void UpdateScoreUI()
     {
         if (scoreText != null)
             scoreText.text = "Score: " + score;
+    }
+
+    void UpdateComboUI()
+    {
+        if (comboText == null) return;
+
+        if (comboCount >= 3)
+        {
+            comboText.gameObject.SetActive(true);
+            comboText.text = $"COMBO x{comboMultiplier:0.0}!";
+        }
+        else
+        {
+            comboText.gameObject.SetActive(false);
+        }
+    }
+
+    // Sinh chữ bay trên màn hình
+    public void SpawnFloatingText(string text, Vector3 position, Color color, float fontSize = 5f)
+    {
+        if (floatingTextPrefab == null) return;
+
+        GameObject ftObj = Instantiate(floatingTextPrefab, position, Quaternion.identity);
+        FloatingText ft = ftObj.GetComponent<FloatingText>();
+        if (ft != null)
+        {
+            ft.Setup(text, color, fontSize);
+        }
     }
 
     // --- QUẢN LÝ MÁU / MẠNG SỐNG ---
@@ -136,10 +231,15 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    public void Heal(int amount)
+    public void Heal(int amount, Vector3? worldPosition = null)
     {
         currentLives = Mathf.Min(maxLives, currentLives + amount);
         UpdateLivesUI();
+
+        if (worldPosition.HasValue)
+        {
+            SpawnFloatingText("+1 HP", worldPosition.Value, Color.cyan);
+        }
     }
 
     void UpdateLivesUI()

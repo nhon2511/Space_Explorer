@@ -11,6 +11,8 @@ TagManager:
   - Health
   - Magnet
   - WeaponUpgrade
+  - Enemy
+  - EnemyLaser
   layers:
   - Default
   - TransparentFX

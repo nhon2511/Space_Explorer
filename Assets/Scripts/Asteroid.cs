@@ -73,10 +73,10 @@ public class Asteroid : MonoBehaviour
         // Khi bị đạn Laser bắn trúng
         if (other.CompareTag("Laser"))
         {
-            // 1. Cộng điểm
+            // 1. Cộng điểm kèm vị trí nổi số
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.AddScore(scoreValue);
+                GameManager.Instance.AddScore(scoreValue, transform.position);
             }
 
             // 2. Âm thanh nổ
@@ -133,6 +133,17 @@ public class Asteroid : MonoBehaviour
     void SpawnRandomDrop(Vector3 spawnPosition)
     {
         if (Random.value > dropChance) return;
+
+        // Ưu tiên rơi đồ thích ứng theo trạng thái máu và súng của người chơi
+        if (ItemDropManager.Instance != null)
+        {
+            GameObject smartItem = ItemDropManager.Instance.GetSmartDrop();
+            if (smartItem != null)
+            {
+                Instantiate(smartItem, spawnPosition, Quaternion.identity);
+                return;
+            }
+        }
 
         // Nếu có danh sách nhiều vật phẩm
         if (dropPrefabs != null && dropPrefabs.Length > 0)

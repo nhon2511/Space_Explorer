@@ -181,4 +181,4 @@ MonoBehaviour:
   - {fileID: 664366091502783974, guid: 21e73131a31f646408671d7d029e0a4b, type: 3}
   - {fileID: 664366091502783974, guid: 20532ba05770b754b944b919af3f54af, type: 3}
   shieldDropPrefab: {fileID: 664366091502783974, guid: 7977dd861ee3ca94494246e5a6589566, type: 3}
-  dropChance: 0.2
+  dropChance: 0.35

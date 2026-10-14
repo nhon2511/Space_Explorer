@@ -41,7 +41,7 @@ public class PlayerCollision : MonoBehaviour
         else if (other.CompareTag("Star"))
         {
             if (GameManager.Instance != null)
-                GameManager.Instance.AddScore(10);
+                GameManager.Instance.AddScore(10, other.transform.position);
 
             if (AudioManager.Instance != null)
                 AudioManager.Instance.PlayStar();
@@ -63,7 +63,7 @@ public class PlayerCollision : MonoBehaviour
         else if (other.CompareTag("Health"))
         {
             if (GameManager.Instance != null)
-                GameManager.Instance.Heal(1);
+                GameManager.Instance.Heal(1, transform.position);
 
             if (AudioManager.Instance != null)
                 AudioManager.Instance.PlayShieldPickup();
@@ -84,47 +84,60 @@ public class PlayerCollision : MonoBehaviour
         // 6. VA CHẠM THIÊN THẠCH
         else if (other.CompareTag("Asteroid"))
         {
-            if (hasShield)
+            TakeHitFromEnemy(1);
+            Destroy(other.gameObject);
+        }
+        // 7. VA CHẠM ĐẠN ĐỊCH
+        else if (other.GetComponent<EnemyLaser>() != null || other.CompareTag("EnemyLaser"))
+        {
+            TakeHitFromEnemy(1);
+            Destroy(other.gameObject);
+        }
+        // 8. VA CHẠM TÀU ĐỊCH
+        else if (other.GetComponent<EnemyBase>() != null || other.CompareTag("Enemy"))
+        {
+            TakeHitFromEnemy(1);
+        }
+    }
+
+    // Xử lý chung khi người chơi trúng đòn (Thiên thạch, Đạn địch, Tàu địch)
+    public void TakeHitFromEnemy(int damage = 1)
+    {
+        if (hasShield)
+        {
+            // CÓ KHIÊN: Vỡ khiên đỡ đòn, tàu không mất mạng
+            BreakShield();
+
+            if (AudioManager.Instance != null)
             {
-                // CÓ KHIÊN: Vỡ khiên đỡ đòn, tàu không mất mạng
-                BreakShield();
-
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlayShieldBreak();
-                    AudioManager.Instance.PlayExplosion();
-                }
-
-                if (CameraShake.Instance != null)
-                    CameraShake.Instance.Shake(0.2f, 0.25f);
-
-                Destroy(other.gameObject);
+                AudioManager.Instance.PlayShieldBreak();
+                AudioManager.Instance.PlayExplosion();
             }
-            else
+
+            if (CameraShake.Instance != null)
+                CameraShake.Instance.Shake(0.2f, 0.25f);
+        }
+        else
+        {
+            // KHÔNG CÓ KHIÊN: Kiểm tra thời gian bất tử
+            if (isInvulnerable) return;
+
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayExplosion();
+
+            if (CameraShake.Instance != null)
+                CameraShake.Instance.Shake(0.3f, 0.4f);
+
+            // Trừ điểm và trừ mạng
+            if (GameManager.Instance != null)
             {
-                // KHÔNG CÓ KHIÊN: Kiểm tra xem có đang trong thời gian bất tử (I-Frames) không
-                if (isInvulnerable) return;
+                GameManager.Instance.DeductScore(5, transform.position);
+                bool isDead = GameManager.Instance.TakeDamage(damage);
 
-                if (AudioManager.Instance != null)
-                    AudioManager.Instance.PlayExplosion();
-
-                if (CameraShake.Instance != null)
-                    CameraShake.Instance.Shake(0.3f, 0.4f);
-
-                // Trừ điểm và trừ 1 mạng
-                if (GameManager.Instance != null)
+                if (!isDead)
                 {
-                    GameManager.Instance.DeductScore(5);
-                    bool isDead = GameManager.Instance.TakeDamage(1);
-
-                    // Nếu chưa hết mạng -> Bật trạng thái chớp nháy bất tử
-                    if (!isDead)
-                    {
-                        StartCoroutine(InvulnerabilityRoutine());
-                    }
+                    StartCoroutine(InvulnerabilityRoutine());
                 }
-
-                Destroy(other.gameObject);
             }
         }
     }
