@@ -60,6 +60,16 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // Tự động nạp số Máu cơ bản của Phi Thuyền được chọn từ Cửa Hàng
+        if (ShopManager.Instance != null)
+        {
+            ShipData ship = ShopManager.Instance.GetSelectedShipData();
+            if (ship != null)
+            {
+                maxLives = ship.baseLives;
+            }
+        }
+
         currentLives = maxLives;
         UpdateScoreUI();
         UpdateLivesUI();
@@ -311,6 +321,12 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f; // Khôi phục thời gian
 
         PlayerPrefs.SetInt("FinalScore", score);
+
+        // Cộng dồn điểm số vào Quỹ Điểm vĩnh viễn của người chơi để mua Tàu trong Shop
+        if (ShopManager.Instance != null)
+        {
+            ShopManager.Instance.AddCredits(score);
+        }
 
         int currentHighScore = PlayerPrefs.GetInt("HighScore", 0);
         if (score > currentHighScore)

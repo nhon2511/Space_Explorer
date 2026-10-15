@@ -64,6 +64,34 @@ public class PlayerController : MonoBehaviour
             minBounds = new Vector2(lowerLeft.x + screenPadding, lowerLeft.y + screenPadding);
             maxBounds = new Vector2(upperRight.x - screenPadding, upperRight.y - screenPadding);
         }
+
+        // Tự động nạp Phi Thuyền được chọn từ Cửa Hàng (Shop)
+        LoadSelectedShip();
+    }
+
+    private void LoadSelectedShip()
+    {
+        if (ShopManager.Instance == null) return;
+
+        ShipData ship = ShopManager.Instance.GetSelectedShipData();
+        if (ship != null)
+        {
+            SpriteRenderer sr = GetComponent<SpriteRenderer>();
+            if (sr != null && ship.shipSprite != null)
+            {
+                sr.sprite = ship.shipSprite;
+            }
+
+            moveSpeed = ship.moveSpeed;
+            fireRate = ship.fireRate;
+            weaponLevel = ship.startingWeaponLevel;
+
+            // Kích hoạt đặc quyền riêng nếu có
+            if (ship.startsWithDrone)
+            {
+                ApplyDroneUpgrade(1, null);
+            }
+        }
     }
 
     void Update()

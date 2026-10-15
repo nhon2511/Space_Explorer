@@ -6,11 +6,30 @@ public class MainMenuController : MonoBehaviour
     [Header("UI Reference")]
     public GameObject instructionsPanel;
     public GameObject settingsPanel;
+    public GameObject shopPanel;
 
     // Chuyển sang scene GamePlay
     public void PlayGame()
     {
         SceneManager.LoadScene("GamePlay");
+    }
+
+    // Mở Cửa Hàng Tàu Bay
+    public void OpenShop()
+    {
+        if (shopPanel != null)
+        {
+            shopPanel.SetActive(true);
+        }
+    }
+
+    // Đóng Cửa Hàng
+    public void CloseShop()
+    {
+        if (shopPanel != null)
+        {
+            shopPanel.SetActive(false);
+        }
     }
 
     // Mở bảng hướng dẫn
