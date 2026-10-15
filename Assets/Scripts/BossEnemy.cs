@@ -275,11 +275,16 @@ public class BossEnemy : EnemyBase
         // Khôi phục thời gian bình thường
         Time.timeScale = 1f;
 
-        // Cộng điểm lớn
+        // Cộng điểm lớn & EXP
         if (GameManager.Instance != null)
         {
             GameManager.Instance.AddScore(scoreValue, transform.position);
             GameManager.Instance.SpawnFloatingText("[VICTORY] BOSS DEFEATED! +500", new Vector3(0, 1.5f, 0), Color.green, 8f);
+        }
+
+        if (UpgradeManager.Instance != null)
+        {
+            UpgradeManager.Instance.AddExp(200);
         }
 
         // Rơi ra nhiều phần thưởng đặc biệt

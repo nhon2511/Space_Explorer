@@ -73,10 +73,26 @@ public class Asteroid : MonoBehaviour
         // Khi bị đạn Laser bắn trúng
         if (other.CompareTag("Laser"))
         {
-            // 1. Cộng điểm kèm vị trí nổi số
+            PlayerLaser pl = other.GetComponent<PlayerLaser>();
+            if (pl != null)
+            {
+                if (!pl.CanHit(gameObject)) return;
+                pl.RegisterHit(gameObject);
+            }
+            else
+            {
+                Destroy(other.gameObject);
+            }
+
+            // 1. Cộng điểm & EXP
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.AddScore(scoreValue, transform.position);
+            }
+
+            if (UpgradeManager.Instance != null)
+            {
+                UpgradeManager.Instance.AddExp(canSplit ? 10 : 5);
             }
 
             // 2. Âm thanh nổ
@@ -124,8 +140,7 @@ public class Asteroid : MonoBehaviour
                 SpawnRandomDrop(currentPos);
             }
 
-            // 6. Hủy đạn và thiên thạch
-            Destroy(other.gameObject);
+            // 6. Hủy thiên thạch
             Destroy(gameObject);
         }
     }

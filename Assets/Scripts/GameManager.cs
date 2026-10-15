@@ -23,7 +23,8 @@ public class GameManager : MonoBehaviour
     private int currentLives;
 
     [Header("Lives UI (Hình Trái Tim)")]
-    public Image[] heartImages; // Mảng 3 hình trái tim
+    public Image[] heartImages; // Mảng 3 hình trái tim ban đầu
+    private System.Collections.Generic.List<Image> activeHeartList = new System.Collections.Generic.List<Image>();
 
     [Header("Floating Text VFX")]
     public GameObject floatingTextPrefab;
@@ -48,6 +49,16 @@ public class GameManager : MonoBehaviour
     {
         // Luôn đảm bảo thời gian chạy bình thường khi bắt đầu ván
         Time.timeScale = 1f;
+
+        // Nạp danh sách trái tim ban đầu
+        activeHeartList.Clear();
+        if (heartImages != null)
+        {
+            for (int i = 0; i < heartImages.Length; i++)
+            {
+                if (heartImages[i] != null) activeHeartList.Add(heartImages[i]);
+            }
+        }
 
         currentLives = maxLives;
         UpdateScoreUI();
@@ -242,15 +253,54 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void IncreaseMaxLives(int amount)
+    {
+        maxLives += amount;
+
+        // Sinh thêm hình trái tim mới vào hàng HeartsGroup
+        if (activeHeartList != null && activeHeartList.Count > 0)
+        {
+            Image template = activeHeartList[0];
+            if (template != null && template.transform.parent != null)
+            {
+                for (int i = 0; i < amount; i++)
+                {
+                    GameObject newHeartObj = Instantiate(template.gameObject, template.transform.parent);
+                    newHeartObj.name = $"Heart_{activeHeartList.Count + 1}";
+                    Image newHeartImg = newHeartObj.GetComponent<Image>();
+                    activeHeartList.Add(newHeartImg);
+                }
+            }
+        }
+
+        Heal(amount);
+
+        if (PlayerController.Instance != null)
+        {
+            SpawnFloatingText("[+1 MAX HP!]", PlayerController.Instance.transform.position, Color.green, 6.5f);
+        }
+    }
+
     void UpdateLivesUI()
     {
-        if (heartImages == null || heartImages.Length == 0) return;
-
-        for (int i = 0; i < heartImages.Length; i++)
+        if (activeHeartList != null && activeHeartList.Count > 0)
         {
-            if (heartImages[i] != null)
+            for (int i = 0; i < activeHeartList.Count; i++)
             {
-                heartImages[i].gameObject.SetActive(i < currentLives);
+                if (activeHeartList[i] != null)
+                {
+                    activeHeartList[i].gameObject.SetActive(i < currentLives);
+                }
+            }
+        }
+        else if (heartImages != null)
+        {
+            for (int i = 0; i < heartImages.Length; i++)
+            {
+                if (heartImages[i] != null)
+                {
+                    heartImages[i].gameObject.SetActive(i < currentLives);
+                }
             }
         }
     }

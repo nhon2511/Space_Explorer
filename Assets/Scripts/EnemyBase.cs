@@ -64,10 +64,15 @@ public class EnemyBase : MonoBehaviour
 
     protected virtual void Die()
     {
-        // 1. Cộng điểm
+        // 1. Cộng điểm & EXP
         if (GameManager.Instance != null)
         {
             GameManager.Instance.AddScore(scoreValue, transform.position);
+        }
+
+        if (UpgradeManager.Instance != null)
+        {
+            UpgradeManager.Instance.AddExp(25);
         }
 
         // 2. Âm thanh nổ
@@ -134,8 +139,20 @@ public class EnemyBase : MonoBehaviour
         // Bị đạn Laser của Player bắn trúng
         if (other.CompareTag("Laser"))
         {
-            TakeDamage(1);
-            Destroy(other.gameObject);
+            PlayerLaser pl = other.GetComponent<PlayerLaser>();
+            if (pl != null)
+            {
+                if (pl.CanHit(gameObject))
+                {
+                    TakeDamage(pl.damage);
+                    pl.RegisterHit(gameObject);
+                }
+            }
+            else
+            {
+                TakeDamage(1);
+                Destroy(other.gameObject);
+            }
         }
         // Đâm trực tiếp vào Tàu Player
         else if (other.CompareTag("Player") || other.GetComponent<PlayerCollision>() != null)

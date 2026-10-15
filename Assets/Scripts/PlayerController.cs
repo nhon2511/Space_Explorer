@@ -28,7 +28,14 @@ public class PlayerController : MonoBehaviour
     public int weaponLevel = 1;
 
     [Header("VFX Settings")]
-    public Animator thrusterAnimator; // Kéo đối tượng con ThrusterVisual vào đây
+    public Animator thrusterAnimator;
+
+    [Header("Phase 4: Roguelite Upgrades")]
+    public int laserPierces = 0;
+    public bool hasPermanentMagnet = false;
+    public float magnetRadius = 5.0f;
+    private System.Collections.Generic.List<GameObject> activeDrones = new System.Collections.Generic.List<GameObject>();
+    private MissileLauncher missileLauncher;
 
     public static PlayerController Instance;
 
@@ -77,6 +84,19 @@ public class PlayerController : MonoBehaviour
         {
             nextFireTime = Time.time + fireRate;
             Shoot();
+        }
+
+        // 4. Lõi hấp dẫn vĩnh viễn (Graviton Core)
+        if (hasPermanentMagnet)
+        {
+            Collider2D[] items = Physics2D.OverlapCircleAll(transform.position, magnetRadius);
+            foreach (var col in items)
+            {
+                if (col.CompareTag("Star") || col.CompareTag("Health") || col.CompareTag("Shield") || col.CompareTag("Magnet") || col.CompareTag("WeaponUpgrade"))
+                {
+                    col.transform.position = Vector3.MoveTowards(col.transform.position, transform.position, 9.5f * Time.deltaTime);
+                }
+            }
         }
     }
 
@@ -150,12 +170,87 @@ public class PlayerController : MonoBehaviour
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg - 90f;
         GameObject laser = Instantiate(laserPrefab, spawnPos, Quaternion.Euler(0, 0, angle));
 
+        // Thiết lập khả năng đạn xuyên thấu (Piercing Laser)
+        PlayerLaser pl = laser.GetComponent<PlayerLaser>();
+        if (pl == null) pl = laser.AddComponent<PlayerLaser>();
+        int pierces = (laserPierces >= 3) ? 999 : laserPierces;
+        pl.SetPiercing(pierces);
+
+        // Hiệu ứng đạn to và sáng hơn khi đạt cấp xuyên tối đa
+        if (laserPierces >= 3)
+        {
+            laser.transform.localScale *= 1.35f;
+            SpriteRenderer sr = laser.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.color = new Color(0.2f, 1f, 1f, 1f);
+        }
+
         Rigidbody2D laserRb = laser.GetComponent<Rigidbody2D>();
         if (laserRb == null) laserRb = laser.AddComponent<Rigidbody2D>();
         laserRb.gravityScale = 0;
         laserRb.linearVelocity = direction.normalized * laserSpeed;
 
         Destroy(laser, 2.5f);
+    }
+
+    // --- LOGIC VŨ KHÍ ROGUELITE ---
+    public void ApplyDroneUpgrade(int droneCount, GameObject dronePrefab)
+    {
+        if (dronePrefab == null)
+            dronePrefab = Resources.Load<GameObject>("OrbitalDrone");
+
+        if (dronePrefab == null) return;
+
+        // Xóa drone cũ trước khi tạo lại đội hình phân bố đều góc
+        foreach (var d in activeDrones)
+        {
+            if (d != null) Destroy(d);
+        }
+        activeDrones.Clear();
+
+        float angleStep = 360f / Mathf.Max(1, droneCount);
+        for (int i = 0; i < droneCount; i++)
+        {
+            GameObject droneObj = Instantiate(dronePrefab, transform.position, Quaternion.identity);
+            droneObj.name = $"OrbitalDrone_{i + 1}";
+            OrbitalDrone drone = droneObj.GetComponent<OrbitalDrone>();
+            if (drone != null)
+            {
+                float speed = 150f + (droneCount * 25f);
+                float radius = 1.75f + (droneCount * 0.1f);
+                drone.contactDamage = 2 + (droneCount - 1); // Cấp 1: 2 dmg, Cấp 2: 3 dmg, Cấp 3: 4 dmg
+                drone.SetOrbitParams(transform, radius, speed, i * angleStep);
+            }
+            activeDrones.Add(droneObj);
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SpawnFloatingText($"[VỆ TINH: {droneCount} DRONE]", transform.position, Color.cyan, 6f);
+        }
+    }
+
+    public void ApplyMissileUpgrade(int level, GameObject missilePrefab)
+    {
+        if (missileLauncher == null)
+        {
+            missileLauncher = GetComponent<MissileLauncher>();
+            if (missileLauncher == null)
+            {
+                missileLauncher = gameObject.AddComponent<MissileLauncher>();
+            }
+        }
+
+        if (missilePrefab == null)
+        {
+            missilePrefab = Resources.Load<GameObject>("HomingMissile");
+        }
+
+        if (missilePrefab != null)
+        {
+            missileLauncher.missilePrefab = missilePrefab;
+        }
+
+        missileLauncher.UpgradeLauncher(level);
     }
 
     // --- CÁC HÀM NHẬN HIỆU ỨNG TỪ VẬT PHẨM ---

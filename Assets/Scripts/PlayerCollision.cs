@@ -43,6 +43,9 @@ public class PlayerCollision : MonoBehaviour
             if (GameManager.Instance != null)
                 GameManager.Instance.AddScore(10, other.transform.position);
 
+            if (UpgradeManager.Instance != null)
+                UpgradeManager.Instance.AddExp(15);
+
             if (AudioManager.Instance != null)
                 AudioManager.Instance.PlayStar();
 
