@@ -22,8 +22,10 @@ public class Spawner : MonoBehaviour
 
     [Header("Boss Settings")]
     public GameObject bossPrefab;
-    public float bossSpawnTime = 75f; // Boss xuất hiện sau 75 giây
-    private bool isBossSpawned = false;
+    [Tooltip("Số điểm tích lũy mỗi lần để triệu hồi Boss (Mặc định: 10.000 điểm/lần)")]
+    public int bossScoreInterval = 10000;
+    private int nextBossScoreThreshold = 10000;
+    private int bossEncounterCount = 0;
     private bool isBossActive = false;
 
     [Header("Spawn Position Boundaries")]
@@ -62,10 +64,14 @@ public class Spawner : MonoBehaviour
         // Cập nhật hệ số tốc độ tăng dần theo thời gian (tăng 0.8% mỗi giây sống sót)
         currentSpeedMultiplier = Mathf.Min(1f + (elapsedTime * 0.008f), maxSpeedMultiplier);
 
-        // Kích hoạt Boss xuất hiện khi đến mốc thời gian
-        if (elapsedTime >= bossSpawnTime && !isBossSpawned)
+        // Kích hoạt Boss xuất hiện mỗi khi đạt mốc 10.000 điểm
+        if (GameManager.Instance != null && !isBossActive)
         {
-            SpawnBossEvent();
+            int currentScore = GameManager.Instance.GetScore();
+            if (currentScore >= nextBossScoreThreshold)
+            {
+                SpawnBossEvent();
+            }
         }
 
         // Kiểm tra chuyển Giai đoạn (Phase Transition)
@@ -81,22 +87,41 @@ public class Spawner : MonoBehaviour
 
     void SpawnBossEvent()
     {
-        isBossSpawned = true;
         isBossActive = true;
+        bossEncounterCount++;
 
-        AnnounceWarning("[CRITICAL ALERT] MOTHERSHIP INCOMING!", Color.red);
+        string alert = (bossEncounterCount == 1)
+            ? $"[CRITICAL ALERT] {nextBossScoreThreshold:N0} PTS - MOTHERSHIP INCOMING!"
+            : $"[CRITICAL ALERT] {nextBossScoreThreshold:N0} PTS - MOTHERSHIP MK-{bossEncounterCount}!";
+        AnnounceWarning(alert, Color.red);
 
         if (bossPrefab != null)
         {
-            Instantiate(bossPrefab, new Vector2(0, spawnY + 1.2f), Quaternion.Euler(0, 0, 180f));
+            GameObject bossObj = Instantiate(bossPrefab, new Vector2(0, spawnY + 1.2f), Quaternion.Euler(0, 0, 180f));
+            BossEnemy boss = bossObj.GetComponent<BossEnemy>();
+            if (boss != null)
+            {
+                boss.SetBossLevel(bossEncounterCount);
+            }
         }
     }
 
     public void OnBossDefeated()
     {
         isBossActive = false;
-        // Sau khi Boss bị hạ, game chuyển sang giai đoạn sinh tồn vô cực
-        AnnounceWarning("SURVIVAL MODE: ENDLESS STORM!", Color.magenta);
+
+        // Cập nhật mốc điểm triệu hồi Boss lần kế tiếp (cách 10.000 điểm)
+        if (GameManager.Instance != null)
+        {
+            int currentScore = GameManager.Instance.GetScore();
+            nextBossScoreThreshold = ((currentScore / bossScoreInterval) + 1) * bossScoreInterval;
+        }
+        else
+        {
+            nextBossScoreThreshold += bossScoreInterval;
+        }
+
+        AnnounceWarning($"BOSS DEFEATED! NEXT BOSS AT {nextBossScoreThreshold:N0} PTS", Color.green);
     }
 
     void UpdatePhase()

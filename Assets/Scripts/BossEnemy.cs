@@ -31,6 +31,7 @@ public class BossEnemy : EnemyBase
     protected override void Awake()
     {
         base.Awake();
+        autoDestroy = false; // Boss TUYỆT ĐỐI không tự hủy theo thời gian!
         if (autoFaceDown)
         {
             // Tự động xoay 180 độ để mũi tàu chúc thẳng xuống phía dưới hướng về Player
@@ -38,18 +39,42 @@ public class BossEnemy : EnemyBase
         }
     }
 
+    [Header("Boss Progression")]
+    public int bossLevel = 1;
+
+    public void SetBossLevel(int level)
+    {
+        bossLevel = Mathf.Max(1, level);
+        maxHealth = 40 + (bossLevel - 1) * 20;
+        currentHealth = maxHealth;
+        scoreValue = 500 + (bossLevel - 1) * 250;
+
+        if (BossHealthBarUI.Instance != null)
+        {
+            string title = (bossLevel == 1) ? "DREADNOUGHT MOTHERSHIP" : $"DREADNOUGHT MOTHERSHIP MK-{bossLevel}";
+            BossHealthBarUI.Instance.ActivateBossBar(this, title, maxHealth);
+        }
+    }
+
     protected override void Start()
     {
-        // 1. Chỉ số máu khủng và điểm lớn
-        maxHealth = 40;
+        autoDestroy = false; // Đảm bảo không bị hủy sau 15 giây
+
+        // 1. Chỉ số máu khủng và điểm lớn (tự scale theo cấp Boss nếu gặp lại nhiều lần)
+        if (bossLevel > 1)
+        {
+            maxHealth = 40 + (bossLevel - 1) * 20;
+            scoreValue = 500 + (bossLevel - 1) * 250;
+        }
+        else
+        {
+            maxHealth = 40;
+            scoreValue = 500;
+        }
         currentHealth = maxHealth;
-        scoreValue = 500;
         contactDamage = 2;
 
         base.Start();
-
-        // Xóa lệnh tự hủy 15s của quái thường (Boss ở lại cho đến khi bị đánh bại)
-        CancelInvoke();
 
         patrolDirection = (Random.value > 0.5f) ? 1 : -1;
         nextSpreadFireTime = Time.time + 2.5f;
@@ -59,7 +84,8 @@ public class BossEnemy : EnemyBase
         // Cập nhật thanh máu Boss trên UI
         if (BossHealthBarUI.Instance != null)
         {
-            BossHealthBarUI.Instance.ActivateBossBar(this, "DREADNOUGHT MOTHERSHIP", maxHealth);
+            string title = (bossLevel == 1) ? "DREADNOUGHT MOTHERSHIP" : $"DREADNOUGHT MOTHERSHIP MK-{bossLevel}";
+            BossHealthBarUI.Instance.ActivateBossBar(this, title, maxHealth);
         }
 
         // Tự động nạp Prefab đạn dự phòng nếu chưa kéo
@@ -313,5 +339,45 @@ public class BossEnemy : EnemyBase
 
         if (ItemDropManager.Instance.weaponUpgradePrefab != null)
             Instantiate(ItemDropManager.Instance.weaponUpgradePrefab, transform.position + Vector3.right * 1.5f, Quaternion.identity);
+    }
+
+    protected override void OnTriggerEnter2D(Collider2D other)
+    {
+        // Bị đạn Laser của Player bắn trúng
+        if (other.CompareTag("Laser"))
+        {
+            PlayerLaser pl = other.GetComponent<PlayerLaser>();
+            if (pl != null)
+            {
+                if (pl.CanHit(gameObject))
+                {
+                    TakeDamage(pl.damage);
+                    pl.RegisterHit(gameObject);
+                }
+            }
+            else
+            {
+                TakeDamage(1);
+                Destroy(other.gameObject);
+            }
+        }
+        // Đâm vào Player: Gây sát thương cho Player nhưng Boss KHÔNG tự hủy!
+        else if (other.CompareTag("Player") || other.GetComponent<PlayerCollision>() != null)
+        {
+            PlayerCollision playerCol = other.GetComponent<PlayerCollision>();
+            if (playerCol != null)
+            {
+                playerCol.TakeHitFromEnemy(contactDamage);
+            }
+        }
+    }
+
+    void OnDestroy()
+    {
+        // Đảm bảo ẩn thanh máu nếu Boss bị biến mất vì bất kỳ lý do nào
+        if (BossHealthBarUI.Instance != null)
+        {
+            BossHealthBarUI.Instance.HideBossBar();
+        }
     }
 }

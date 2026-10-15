@@ -106,6 +106,15 @@ public class GameManager : MonoBehaviour
                 PauseGame();
             }
         }
+
+#if UNITY_EDITOR
+        // Phím B: Tặng nhanh 10.000 điểm để tiện test triệu hồi Boss trong Unity Editor
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            AddScore(10000, Vector3.zero);
+            Debug.Log($"[CHEAT] Đã cộng +10.000 điểm test Boss! Tổng điểm hiện tại: {score}");
+        }
+#endif
     }
 
     // --- LOGIC PAUSE & RESUME ---
@@ -150,6 +159,7 @@ public class GameManager : MonoBehaviour
         return isPaused;
     }
 
+    public int GetScore() => score;
     public int GetCurrentLives() => currentLives;
     public int GetMaxLives() => maxLives;
 

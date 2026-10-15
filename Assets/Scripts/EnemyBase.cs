@@ -18,6 +18,10 @@ public class EnemyBase : MonoBehaviour
     [Range(0f, 1f)]
     public float dropChance = 0.4f;
 
+    [Header("Lifetime Settings")]
+    public bool autoDestroy = true;
+    public float autoDestroyTime = 15f;
+
     protected SpriteRenderer spriteRenderer;
     protected Color originalColor;
     protected Transform playerTransform;
@@ -45,8 +49,11 @@ public class EnemyBase : MonoBehaviour
         // Tự gán Tag Enemy
         gameObject.tag = "Enemy";
 
-        // Tự hủy sau 15 giây nếu không bị tiêu diệt
-        Destroy(gameObject, 15f);
+        // Tự hủy sau autoDestroyTime giây nếu là quái thường
+        if (autoDestroy && autoDestroyTime > 0f)
+        {
+            Destroy(gameObject, autoDestroyTime);
+        }
     }
 
     public virtual void TakeDamage(int damage)
