@@ -20,6 +20,12 @@ public class Spawner : MonoBehaviour
     public GameObject enemyScoutPrefab;
     public GameObject enemySniperPrefab;
 
+    [Header("Boss Settings")]
+    public GameObject bossPrefab;
+    public float bossSpawnTime = 75f; // Boss xuất hiện sau 75 giây
+    private bool isBossSpawned = false;
+    private bool isBossActive = false;
+
     [Header("Spawn Position Boundaries")]
     public float minX = -7.5f;
     public float maxX = 7.5f;
@@ -41,6 +47,7 @@ public class Spawner : MonoBehaviour
         if (starPrefab == null) starPrefab = Resources.Load<GameObject>("Star");
         if (enemyScoutPrefab == null) enemyScoutPrefab = Resources.Load<GameObject>("Enemy_Scout");
         if (enemySniperPrefab == null) enemySniperPrefab = Resources.Load<GameObject>("Enemy_Sniper");
+        if (bossPrefab == null) bossPrefab = Resources.Load<GameObject>("Boss_Mothership");
     }
 
     void Start()
@@ -55,15 +62,41 @@ public class Spawner : MonoBehaviour
         // Cập nhật hệ số tốc độ tăng dần theo thời gian (tăng 0.8% mỗi giây sống sót)
         currentSpeedMultiplier = Mathf.Min(1f + (elapsedTime * 0.008f), maxSpeedMultiplier);
 
+        // Kích hoạt Boss xuất hiện khi đến mốc thời gian
+        if (elapsedTime >= bossSpawnTime && !isBossSpawned)
+        {
+            SpawnBossEvent();
+        }
+
         // Kiểm tra chuyển Giai đoạn (Phase Transition)
         UpdatePhase();
 
-        // Chu kỳ thả Hòm Tiếp Tế Hỗ Trợ (Supply Drop) mỗi 35 giây
-        if (elapsedTime >= nextSupplyDropTime)
+        // Chu kỳ thả Hòm Tiếp Tế Hỗ Trợ (Supply Drop) mỗi 35 giây (chỉ thả khi không có Boss)
+        if (elapsedTime >= nextSupplyDropTime && !isBossActive)
         {
             nextSupplyDropTime = elapsedTime + 35f;
             SpawnSupplyDrop();
         }
+    }
+
+    void SpawnBossEvent()
+    {
+        isBossSpawned = true;
+        isBossActive = true;
+
+        AnnounceWarning("[CRITICAL ALERT] MOTHERSHIP INCOMING!", Color.red);
+
+        if (bossPrefab != null)
+        {
+            Instantiate(bossPrefab, new Vector2(0, spawnY + 1.2f), Quaternion.Euler(0, 0, 180f));
+        }
+    }
+
+    public void OnBossDefeated()
+    {
+        isBossActive = false;
+        // Sau khi Boss bị hạ, game chuyển sang giai đoạn sinh tồn vô cực
+        AnnounceWarning("SURVIVAL MODE: ENDLESS STORM!", Color.magenta);
     }
 
     void UpdatePhase()
@@ -130,6 +163,14 @@ public class Spawner : MonoBehaviour
 
         while (true)
         {
+            // Nếu Boss đang xuất hiện: Tạm dừng sinh quái thường để tập trung đấu Boss
+            if (isBossActive)
+            {
+                if (Random.value < 0.35f) SpawnSingleStar();
+                yield return new WaitForSeconds(3.0f);
+                continue;
+            }
+
             float delay = 1.2f;
 
             switch (currentPhase)
